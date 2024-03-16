@@ -4,7 +4,7 @@ import net.fabricmc.api.ModInitializer;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.util.ActionResult;
-// Test
+
 
 public class DeepslateGenerator implements ModInitializer {
     
