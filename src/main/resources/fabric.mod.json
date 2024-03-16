@@ -1,0 +1,34 @@
+{
+	"schemaVersion": 1,
+	"id": "deepslategenerator",
+	"version": "1.0.0",
+	"name": "Deepslate Generator",
+	"description": "Turn a cobblestone into a deepslate generator if it is built below y-level 0!",
+	"authors": [
+		"Polygon6233"
+	],
+	"contact": {
+		"homepage": "https://polygon6233.is-a.dev/"
+	},
+	"license": "GPL-3.0",
+	"icon": "assets/deepslategenerator/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.polygon.deepslategenerator.DeepslateGenerator"
+		]
+	},
+    "mixins": [
+        "deepslategenerator.mixins.json"
+    ],
+	
+	"depends": {
+		"fabricloader": ">=0.15.0",
+		"minecraft": "~1.20.4",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

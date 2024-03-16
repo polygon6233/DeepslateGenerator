@@ -1,0 +1,125 @@
+plugins {
+	id 'fabric-loom' version '1.4-SNAPSHOT'
+	id 'maven-publish'
+	id 'com.modrinth.minotaur' version '2.+'
+	id 'com.github.breadmoirai.github-release' version '2.4.1'
+}
+
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
+
+archivesBaseName = project.archives_base_name
+version = project.mod_version
+group = project.maven_group
+
+configurations {
+	includedLibrary
+	implementation.extendsFrom includedLibrary
+}
+
+repositories {
+	maven {
+		url = 'https://maven.xpple.dev/maven2'
+	}
+	maven {
+		url = "https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1"
+	}
+}
+/*
+loom {
+	accessWidenerPath = file('src/main/resources/serveressentials.aw')
+}
+*/
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	compileOnly 'com.demonwav.mcdev:annotations:2.0.0'
+
+	modRuntimeOnly('me.djtheredstoner:DevAuth-fabric:1.1.0') {
+		exclude group: 'net.fabricmc', module: 'fabric-loader'
+	}
+}
+
+
+processResources {
+	inputs.property "version", project.version
+	inputs.property "mcversion", project.minecraft_version_dependency
+
+	duplicatesStrategy DuplicatesStrategy.WARN
+
+	from(sourceSets.main.resources.srcDirs) {
+		include "fabric.mod.json"
+		expand "version": project.version, "mcversion": project.minecraft_version_dependency
+	}
+
+	from(sourceSets.main.resources.srcDirs) {
+		exclude "fabric.mod.json"
+	}
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = "UTF-8"
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	archiveClassifier.set("sources")
+	from sourceSets.main.allSource
+}
+
+jar {
+	from "LICENSE"
+}
+
+// read the changelog from the changelog.txt file, make sure the changelog is recent to avoid accidentally using the previous version's changelog.
+def changelogFile = file('changelog.txt')
+def changelogText = changelogFile.exists() && System.currentTimeMillis() - changelogFile.lastModified() <= 1000 * 60 * 60 ?
+		changelogFile.readLines('UTF-8').join('\n') : ''
+
+modrinth {
+	token = project.hasProperty('modrinthKey') ? project.modrinthKey : System.getenv("MODRINTH_TOKEN")
+	projectId = 'polygons-testmod'
+	uploadFile = remapJar
+	gameVersions.set(project.minecraft_version_list.split('\\s*,\\s*').toList())
+	loaders.set(['fabric', 'quilt'])
+	changelog = changelogText
+	dependencies {
+		required.project 'fabric-api'
+		embedded.project 'betterconfig'
+	}
+}
+tasks.modrinth.onlyIf {
+	!changelogText.isBlank()
+}
+
+githubRelease {
+	token(project.hasProperty('githubKey') ? project.githubKey : (System.getenv("GITHUB_TOKEN") ?: ''))
+	owner 'Polygon'
+	repo 'testmod'
+	targetCommitish 'fabric'
+	releaseName "Version ${project.version} for Minecraft ${project.minecraft_version_list_presentable}"
+	body changelogText
+	releaseAssets remapJar.outputs
+}
+tasks.githubRelease.onlyIf {
+	!changelogText.isBlank()
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			artifact(jar) {
+				builtBy remapJar
+			}
+			artifact(sourcesJar) {
+				builtBy remapSourcesJar
+			}
+		}
+	}
+
+	repositories {
+		// mavenLocal()
+	}
+}
